@@ -1,35 +1,40 @@
-// CREATE WEB SERVER 
+// Create web server
+const express = require('express');
+const app = express();
+// Create a server
+const server = require('http').createServer(app);
+// Create a socket server
+const io = require('socket.io')(server);
 
-var http = require('http');
-var fs = require('fs');
-var url = require('url');
-var querystring = require('querystring');
+// Set the port
+const PORT = 3000;
 
-http.createServer(function (req, res) {
-    var url_parts = url.parse(req.url);
-    var query = querystring.parse(url_parts.query);
+// Set the root path
+app.get('/', (req, res) => {
+  res.sendFile(__dirname + '/index.html');
+});
 
-    if (url_parts.pathname == '/comment') {
-        console.log('comment');
-        var comment = query['comment'];
-        console.log('comment: ' + comment);
+// Set the comments path
+app.get('/comments', (req, res) => {
+  res.sendFile(__dirname + '/comments.html');
+});
 
-        fs.appendFile('comments.txt', comment + '\n', function (err) {
-            if (err) {
-                console.log('Error: ' + err);
-            }
-        });
+// Set the comments path
+app.get('/comments.js', (req, res) => {
+  res.sendFile(__dirname + '/comments.js');
+});
 
-        res.writeHead(200, {
-            'Content-Type': 'text/plain'
-        });
-        res.end('Comment received: ' + comment);
-    } else {
-        fs.readFile('comments.txt', function (err, data) {
-            res.writeHead(200, {
-                'Content-Type': 'text/plain'
-            });
-            res.end(data);
-        });
-    }
-}).listen(8080, ' localhost');
+// Socket server
+io.on('connection', (socket) => {
+  console.log('A user connected');
+  // When the client sends a new comment
+  socket.on('newComment', (comment) => {
+    // Emit the new comment to all connected users
+    io.emit('newComment', comment);
+  });
+});
+
+// Start the server
+server.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
+});
